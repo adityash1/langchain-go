@@ -178,9 +178,44 @@ func main() {
 
 	// fmt.Printf("%+v", result)
 
-	bufferMemory := memory.NewConversationBuffer()
+	// bufferMemory := memory.NewConversationBuffer()
 
-	conversationChain := chains.NewConversation(llm, bufferMemory)
+	// conversationChain := chains.NewConversation(llm, bufferMemory)
+
+	// _, err = chains.Run(ctx, conversationChain, "Hi, my name is Andrew")
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+
+	// _, err = chains.Run(ctx, conversationChain, "What is 1+1?")
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+
+	// _, err = chains.Run(ctx, conversationChain, "What is my name?")
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+
+	// messages, _ := bufferMemory.ChatHistory.Messages(ctx)
+
+	// fmt.Printf("%+v", messages)
+
+	windowBufferMemory := memory.NewConversationWindowBuffer(1)
+
+	windowBufferMemory.SaveContext(ctx, map[string]any{
+		"input": "Hi",
+	}, map[string]any{
+		"output": "What's up",
+	})
+
+	windowBufferMemory.SaveContext(ctx, map[string]any{
+		"input": "Not much, just hanging",
+	}, map[string]any{
+		"output": "Cool",
+	})
+
+	conversationChain := chains.NewConversation(llm, windowBufferMemory)
 
 	_, err = chains.Run(ctx, conversationChain, "Hi, my name is Andrew")
 	if err != nil {
@@ -197,7 +232,5 @@ func main() {
 		log.Fatal(err)
 	}
 
-	messages, _ := bufferMemory.ChatHistory.Messages(ctx)
-
-	fmt.Printf("%+v", messages)
+	fmt.Printf("%+v", windowBufferMemory.ChatHistory)
 }
