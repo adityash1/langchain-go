@@ -3,6 +3,7 @@ module langchain-ollama
 go 1.24.0
 
 require (
+	github.com/gocarina/gocsv v0.0.0-20240520201108-78e41c74b4b1
 	github.com/joho/godotenv v1.5.1
 	github.com/tmc/langchaingo v0.1.13
 )

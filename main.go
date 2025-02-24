@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/gocarina/gocsv"
 	"github.com/joho/godotenv"
 	"github.com/tmc/langchaingo/chains"
 	"github.com/tmc/langchaingo/llms"
@@ -273,32 +274,104 @@ func main() {
 
 	// fmt.Printf("%+v", res)
 
-	firstPrompt := prompts.NewPromptTemplate(
-		`What is the best name to describe
-		a company that makes {{.product}}?. give only one name`,
-		[]string{"product"},
-	)
+	// firstPrompt := prompts.NewPromptTemplate(
+	// 	`What is the best name to describe
+	// 	a company that makes {{.product}}?. give only one name`,
+	// 	[]string{"product"},
+	// )
 
+	// chainOne := chains.NewLLMChain(llm, firstPrompt)
+
+	// secondPrompt := prompts.NewPromptTemplate(
+	// 	`Write a 20 words description for the following
+	// 	company:{{.company_name}}`,
+	// 	[]string{"company_name"},
+	// )
+
+	// chainTwo := chains.NewLLMChain(llm, secondPrompt)
+
+	// chainOne.OutputKey = "company_name"
+
+	// simpleChain, err := chains.NewSequentialChain([]chains.Chain{chainOne, chainTwo}, []string{"product"}, []string{"text"})
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+
+	// product := "Queen Size Sheet Set"
+
+	// res, err := chains.Run(ctx, simpleChain, product)
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+
+	// fmt.Printf("%+v", res)
+
+	type Data struct {
+		Product string `csv:"Product"`
+		Review  string `csv:"Review"`
+	}
+
+	file, err := os.Open("Data.csv")
+	if err != nil {
+		fmt.Println("Error:", err)
+		return
+	}
+	defer file.Close()
+
+	var data []Data
+	if err := gocsv.UnmarshalFile(file, &data); err != nil {
+		fmt.Println("Error:", err)
+		return
+	}
+
+	firstPrompt := prompts.NewPromptTemplate(
+		`Translate the following review to english:
+
+		{{.Review}}`,
+		[]string{"Review"},
+	)
 	chainOne := chains.NewLLMChain(llm, firstPrompt)
+	chainOne.OutputKey = "English_Review"
 
 	secondPrompt := prompts.NewPromptTemplate(
-		`Write a 20 words description for the following
-    	company:{{.company_name}}`,
-		[]string{"company_name"},
+		`Can you summarize the following review in 1 sentence:
+
+		{{.English_Review}}`,
+		[]string{"English_Review"},
 	)
-
 	chainTwo := chains.NewLLMChain(llm, secondPrompt)
+	chainTwo.OutputKey = "summary"
 
-	chainOne.OutputKey = "company_name"
+	// thirdPrompt := prompts.NewPromptTemplate(
+	// 	`What language is the following review:
 
-	simpleChain, err := chains.NewSequentialChain([]chains.Chain{chainOne, chainTwo}, []string{"product"}, []string{"text"})
+	// 	{{.Review}}`,
+	// 	[]string{"Review"},
+	// )
+	// chainThird := chains.NewLLMChain(llm, thirdPrompt)
+	// chainThird.OutputKey = "language"
+
+	fourthPrompt := prompts.NewPromptTemplate(
+		`Write a follow up response to the following
+		summary in the specified language:
+
+		Summary: {{.summary}}`,
+
+		// Language: {{.language}}`,
+		// []string{"summary", "language"},
+		[]string{"summary"},
+	)
+	chainFourth := chains.NewLLMChain(llm, fourthPrompt)
+	chainFourth.OutputKey = "followup_message"
+
+	seqChain, err := chains.NewSequentialChain([]chains.Chain{chainOne, chainTwo, chainFourth}, []string{"Review"}, []string{"followup_message"})
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	product := "Queen Size Sheet Set"
-
-	res, err := chains.Run(ctx, simpleChain, product)
+	res, err := chains.Predict(ctx, seqChain, map[string]any{
+		"Review": data[5].Review,
+	})
 	if err != nil {
 		log.Fatal(err)
 	}
