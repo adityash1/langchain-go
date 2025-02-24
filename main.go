@@ -7,14 +7,15 @@ import (
 	"os"
 
 	"github.com/joho/godotenv"
+	"github.com/tmc/langchaingo/chains"
 	"github.com/tmc/langchaingo/llms"
 	"github.com/tmc/langchaingo/llms/ollama"
-	"github.com/tmc/langchaingo/memory"
+	"github.com/tmc/langchaingo/prompts"
 )
 
 func GetCompletion(ctx context.Context, llm *ollama.LLM, prompt string) (string, error) {
 	completion, err := llm.Call(ctx, prompt,
-		llms.WithTemperature(0.0),
+		llms.WithTemperature(0.9),
 		// llms.WithStreamingFunc(func(ctx context.Context, chunk []byte) error {
 		// 	fmt.Print(string(chunk))
 		// 	return nil
@@ -233,25 +234,74 @@ func main() {
 
 	// fmt.Printf("%+v", windowBufferMemory.ChatHistory)
 
-	tokenBufferMemory := memory.NewConversationTokenBuffer(llm, 30)
+	// tokenBufferMemory := memory.NewConversationTokenBuffer(llm, 30)
 
-	tokenBufferMemory.SaveContext(ctx, map[string]any{
-		"input": "AI is what?!",
-	}, map[string]any{
-		"output": "Amazing!",
-	})
+	// tokenBufferMemory.SaveContext(ctx, map[string]any{
+	// 	"input": "AI is what?!",
+	// }, map[string]any{
+	// 	"output": "Amazing!",
+	// })
 
-	tokenBufferMemory.SaveContext(ctx, map[string]any{
-		"input": "Backpropagation is what?",
-	}, map[string]any{
-		"output": "Beautiful!",
-	})
+	// tokenBufferMemory.SaveContext(ctx, map[string]any{
+	// 	"input": "Backpropagation is what?",
+	// }, map[string]any{
+	// 	"output": "Beautiful!",
+	// })
 
-	tokenBufferMemory.SaveContext(ctx, map[string]any{
-		"input": "Chatbots are what?",
-	}, map[string]any{
-		"output": "Charming!",
-	})
+	// tokenBufferMemory.SaveContext(ctx, map[string]any{
+	// 	"input": "Chatbots are what?",
+	// }, map[string]any{
+	// 	"output": "Charming!",
+	// })
 
-	fmt.Printf("%+v", tokenBufferMemory.ChatHistory)
+	// fmt.Printf("%+v", tokenBufferMemory.ChatHistory)
+
+	// prompt := prompts.NewPromptTemplate(
+	// 	`What is the best name to describe \
+	// a company that makes {{.product}}?
+	// 	`,
+	// 	[]string{"product"},
+	// )
+
+	// chain := chains.NewLLMChain(llm, prompt)
+
+	// product := "Queen Size Sheet Set"
+	// res, err := chains.Run(ctx, chain, product)
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+
+	// fmt.Printf("%+v", res)
+
+	firstPrompt := prompts.NewPromptTemplate(
+		`What is the best name to describe
+		a company that makes {{.product}}?. give only one name`,
+		[]string{"product"},
+	)
+
+	chainOne := chains.NewLLMChain(llm, firstPrompt)
+
+	secondPrompt := prompts.NewPromptTemplate(
+		`Write a 20 words description for the following
+    	company:{{.company_name}}`,
+		[]string{"company_name"},
+	)
+
+	chainTwo := chains.NewLLMChain(llm, secondPrompt)
+
+	chainOne.OutputKey = "company_name"
+
+	simpleChain, err := chains.NewSequentialChain([]chains.Chain{chainOne, chainTwo}, []string{"product"}, []string{"text"})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	product := "Queen Size Sheet Set"
+
+	res, err := chains.Run(ctx, simpleChain, product)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Printf("%+v", res)
 }
