@@ -7,7 +7,6 @@ import (
 	"os"
 
 	"github.com/joho/godotenv"
-	"github.com/tmc/langchaingo/chains"
 	"github.com/tmc/langchaingo/llms"
 	"github.com/tmc/langchaingo/llms/ollama"
 	"github.com/tmc/langchaingo/memory"
@@ -201,36 +200,58 @@ func main() {
 
 	// fmt.Printf("%+v", messages)
 
-	windowBufferMemory := memory.NewConversationWindowBuffer(1)
+	// windowBufferMemory := memory.NewConversationWindowBuffer(1)
 
-	windowBufferMemory.SaveContext(ctx, map[string]any{
-		"input": "Hi",
+	// windowBufferMemory.SaveContext(ctx, map[string]any{
+	// 	"input": "Hi",
+	// }, map[string]any{
+	// 	"output": "What's up",
+	// })
+
+	// windowBufferMemory.SaveContext(ctx, map[string]any{
+	// 	"input": "Not much, just hanging",
+	// }, map[string]any{
+	// 	"output": "Cool",
+	// })
+
+	// conversationChain := chains.NewConversation(llm, windowBufferMemory)
+
+	// _, err = chains.Run(ctx, conversationChain, "Hi, my name is Andrew")
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+
+	// _, err = chains.Run(ctx, conversationChain, "What is 1+1?")
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+
+	// _, err = chains.Run(ctx, conversationChain, "What is my name?")
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+
+	// fmt.Printf("%+v", windowBufferMemory.ChatHistory)
+
+	tokenBufferMemory := memory.NewConversationTokenBuffer(llm, 30)
+
+	tokenBufferMemory.SaveContext(ctx, map[string]any{
+		"input": "AI is what?!",
 	}, map[string]any{
-		"output": "What's up",
+		"output": "Amazing!",
 	})
 
-	windowBufferMemory.SaveContext(ctx, map[string]any{
-		"input": "Not much, just hanging",
+	tokenBufferMemory.SaveContext(ctx, map[string]any{
+		"input": "Backpropagation is what?",
 	}, map[string]any{
-		"output": "Cool",
+		"output": "Beautiful!",
 	})
 
-	conversationChain := chains.NewConversation(llm, windowBufferMemory)
+	tokenBufferMemory.SaveContext(ctx, map[string]any{
+		"input": "Chatbots are what?",
+	}, map[string]any{
+		"output": "Charming!",
+	})
 
-	_, err = chains.Run(ctx, conversationChain, "Hi, my name is Andrew")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	_, err = chains.Run(ctx, conversationChain, "What is 1+1?")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	_, err = chains.Run(ctx, conversationChain, "What is my name?")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	fmt.Printf("%+v", windowBufferMemory.ChatHistory)
+	fmt.Printf("%+v", tokenBufferMemory.ChatHistory)
 }
