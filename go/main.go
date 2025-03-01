@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 
-	"github.com/gocarina/gocsv"
 	"github.com/joho/godotenv"
 	"github.com/tmc/langchaingo/chains"
 	"github.com/tmc/langchaingo/llms"
@@ -39,7 +39,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	ctx := context.Background()
+	// ctx := context.Background()
 
 	// customer_style := `American English
 	// in a calm and respectful tone`
@@ -306,41 +306,41 @@ func main() {
 
 	// fmt.Printf("%+v", res)
 
-	type Data struct {
-		Product string `csv:"Product"`
-		Review  string `csv:"Review"`
-	}
+	// type Data struct {
+	// 	Product string `csv:"Product"`
+	// 	Review  string `csv:"Review"`
+	// }
 
-	file, err := os.Open("Data.csv")
-	if err != nil {
-		fmt.Println("Error:", err)
-		return
-	}
-	defer file.Close()
+	// file, err := os.Open("Data.csv")
+	// if err != nil {
+	// 	fmt.Println("Error:", err)
+	// 	return
+	// }
+	// defer file.Close()
 
-	var data []Data
-	if err := gocsv.UnmarshalFile(file, &data); err != nil {
-		fmt.Println("Error:", err)
-		return
-	}
+	// var data []Data
+	// if err := gocsv.UnmarshalFile(file, &data); err != nil {
+	// 	fmt.Println("Error:", err)
+	// 	return
+	// }
 
-	firstPrompt := prompts.NewPromptTemplate(
-		`Translate the following review to english:
+	// firstPrompt := prompts.NewPromptTemplate(
+	// 	`Translate the following review to english:
 
-		{{.Review}}`,
-		[]string{"Review"},
-	)
-	chainOne := chains.NewLLMChain(llm, firstPrompt)
-	chainOne.OutputKey = "English_Review"
+	// 	{{.Review}}`,
+	// 	[]string{"Review"},
+	// )
+	// chainOne := chains.NewLLMChain(llm, firstPrompt)
+	// chainOne.OutputKey = "English_Review"
 
-	secondPrompt := prompts.NewPromptTemplate(
-		`Can you summarize the following review in 1 sentence:
+	// secondPrompt := prompts.NewPromptTemplate(
+	// 	`Can you summarize the following review in 1 sentence:
 
-		{{.English_Review}}`,
-		[]string{"English_Review"},
-	)
-	chainTwo := chains.NewLLMChain(llm, secondPrompt)
-	chainTwo.OutputKey = "summary"
+	// 	{{.English_Review}}`,
+	// 	[]string{"English_Review"},
+	// )
+	// chainTwo := chains.NewLLMChain(llm, secondPrompt)
+	// chainTwo.OutputKey = "summary"
 
 	// thirdPrompt := prompts.NewPromptTemplate(
 	// 	`What language is the following review:
@@ -351,30 +351,155 @@ func main() {
 	// chainThird := chains.NewLLMChain(llm, thirdPrompt)
 	// chainThird.OutputKey = "language"
 
-	fourthPrompt := prompts.NewPromptTemplate(
-		`Write a follow up response to the following
-		summary in the specified language:
+	// fourthPrompt := prompts.NewPromptTemplate(
+	// 	`Write a follow up response to the following
+	// 	summary in the specified language:
 
-		Summary: {{.summary}}`,
+	// 	Summary: {{.summary}}`,
 
-		// Language: {{.language}}`,
-		// []string{"summary", "language"},
-		[]string{"summary"},
+	// Language: {{.language}}`,
+	// []string{"summary", "language"},
+	// 	[]string{"summary"},
+	// )
+	// chainFourth := chains.NewLLMChain(llm, fourthPrompt)
+	// chainFourth.OutputKey = "followup_message"
+
+	// seqChain, err := chains.NewSequentialChain([]chains.Chain{chainOne, chainTwo, chainFourth}, []string{"Review"}, []string{"followup_message"})
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+
+	// res, err := chains.Predict(ctx, seqChain, map[string]any{
+	// 	"Review": data[5].Review,
+	// })
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+
+	// fmt.Printf("%+v", res)
+
+	physics_template := `You are a very smart physics professor.
+	You are great at answering questions about physics in a concise
+	and easy to understand manner.
+	When you don't know the answer to a question you admit
+	that you don't know.
+	
+	Here is a question:
+	{{.input}}`
+
+	math_template := `You are a very good mathematician.
+	You are great at answering math questions.
+	You are so good because you are able to break down
+	hard problems into their component parts, 
+	answer the component parts, and then put them together
+	to answer the broader question.
+	
+	Here is a question:
+	{{.input}}`
+
+	history_template := `You are a very good historian.
+	You have an excellent knowledge of and understanding of people,
+	events and contexts from a range of historical periods.
+	You have the ability to think, reflect, debate, discuss and
+	evaluate the past. You have a respect for historical evidence
+	and the ability to make use of it to support your explanations
+	and judgements.
+	
+	Here is a question:
+	{{.input}}`
+
+	computerscience_template := `You are a successful computer scientist.
+	You have a passion for creativity, collaboration,
+	forward-thinking, confidence, strong problem-solving capabilities,
+	understanding of theories and algorithms, and excellent communication
+	skills. You are great at answering coding questions.
+	You are so good because you know how to solve a problem by
+	describing the solution in imperative steps
+	that a machine can easily interpret and you know how to
+	choose a solution that has a good balance between
+	time complexity and space complexity.
+	
+	Here is a question:
+	{{.input}}`
+
+	promptInfos := []map[string]string{
+		{
+			"name":            "physics",
+			"description":     "Good for answering questions about physics",
+			"prompt_template": physics_template,
+		},
+		{
+			"name":            "math",
+			"description":     "Good for answering math questions",
+			"prompt_template": math_template,
+		},
+		{
+			"name":            "History",
+			"description":     "Good for answering history questions",
+			"prompt_template": history_template,
+		},
+		{
+			"name":            "computer science",
+			"description":     "Good for answering computer science questions",
+			"prompt_template": computerscience_template,
+		},
+	}
+
+	destinationChains := make(map[string]any)
+	var destinations []string
+	var destinationsStr string
+
+	for _, pInfo := range promptInfos {
+		prompt := prompts.NewPromptTemplate(
+			pInfo["prompt_template"],
+			[]string{"input"},
+		)
+		chain := chains.NewLLMChain(llm, prompt)
+
+		destinationChains[pInfo["name"]] = chain
+
+		destinations = append(destinations, fmt.Sprintf("%s: %s", pInfo["name"], pInfo["description"]))
+	}
+
+	destinationsStr = strings.Join(destinations, "\n")
+
+	fmt.Println(destinationsStr)
+
+	defaultPrompt := prompts.NewPromptTemplate(
+		"",
+		[]string{"input"},
 	)
-	chainFourth := chains.NewLLMChain(llm, fourthPrompt)
-	chainFourth.OutputKey = "followup_message"
+	defaultChain := chains.NewLLMChain(llm, defaultPrompt)
 
-	seqChain, err := chains.NewSequentialChain([]chains.Chain{chainOne, chainTwo, chainFourth}, []string{"Review"}, []string{"followup_message"})
-	if err != nil {
-		log.Fatal(err)
+	const MULTI_PROMPT_ROUTER_TEMPLATE = `Given a raw text input to a 
+	language model select the model prompt best suited for the input. 
+	You will be given the names of the available prompts and a 
+	description of what the prompt is best suited for. 
+	You may also revise the original input if you think that revising
+	it will ultimately lead to a better response from the language model.
+
+	<< FORMATTING >>
+	Return a markdown code snippet with a JSON object formatted to look like:
+	` + "```json" + `
+	{
+		"destination": string // "DEFAULT" or name of the prompt to use in {{.destinations}}
+		"next_inputs": string // a potentially modified version of the original input
 	}
+	` + "```" + `
 
-	res, err := chains.Predict(ctx, seqChain, map[string]any{
-		"Review": data[5].Review,
-	})
-	if err != nil {
-		log.Fatal(err)
-	}
+	REMEMBER: The value of "destination" MUST match one of 
+	the candidate prompts listed below.
+	If "destination" does not fit any of the specified prompts, set it to "DEFAULT."
+	REMEMBER: "next_inputs" can just be the original input 
+	if you don't think any modifications are needed.
 
-	fmt.Printf("%+v", res)
+	<< CANDIDATE PROMPTS >>
+	{{.destinations}}
+
+	<< INPUT >>
+	{{.input}}
+
+	<< OUTPUT (remember to include the ` + "```json" + `)>>`
+
+	// chains.NewConstitutional(llm, destinationChains, )
 }
